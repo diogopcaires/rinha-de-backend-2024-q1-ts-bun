@@ -1,5 +1,6 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { swagger } from "@elysiajs/swagger";
+
 import {
 	UnprocessableContentError,
 	ValidationError,
@@ -7,7 +8,8 @@ import {
 } from "./enums/error";
 import { getCustomerStatement } from "./services/statement.service";
 import { seedDatabase, setupDML } from "./infra/database/config";
-import ResponseBuilder from "./dto/response.builder";
+import ResponseBuilder from "./utils/response.builder";
+import { StatementSchema, TransactionSchema } from "./utils/validation";
 
 setupDML();
 seedDatabase();
@@ -17,40 +19,46 @@ const app = new Elysia()
 		ValidationError,
 		NotFoundError,
 	})
-	.get("/healthcheck", async () => {
-		const check = (sql: postgres.TransactionSql) =>
-			sql.unsafe("SELECT 1 FROM clientes LIMIT 1");
-
-		await Promise.all([roClient.begin(check), rwClient.begin(check)]);
-
-		return "OK";
-	})
+	.get("/healthcheck", async () => {})
 	.group("/clientes/:id", (app) =>
 		app
-			.post("/transacoes", async ({ body, params, set }) => {})
-			.get("/extrato", async ({ params }) => {
-				const { id: idParam } = params as unknown;
+			.post(
+				"/transacoes",
+				async ({ body, params, set }) => {},
+				TransactionSchema,
+			)
 
-				const id = Number(idParam);
+			.get(
+				"/extrato",
+				async ({ params }) => {
+					const { id } = params as unknown;
 
-				if (!Number.isInteger(id)) {
-					throw new UnprocessableContentError("invalid customerId");
-				}
+					const { customer, customerTransactions } =
+						await getCustomerStatement(id);
 
-				const { customer, customerTransactions } =
-					await getCustomerStatement(id);
-
-				return ResponseBuilder.buildStatementResponse(
-					customer,
-					customerTransactions,
-				);
-			}),
+					return ResponseBuilder.buildStatementResponse(
+						customer,
+						customerTransactions,
+					);
+				},
+				StatementSchema,
+			),
 	)
 	.onError(({ code, set }) => {
-		if (code === "UnprocessableContentError") {
-			set.status = 422;
-
-			return "Not Found :(";
+		console.log("adassa");
+		switch (code) {
+			case "UnprocessableContentError": {
+				set.status = 422;
+				return "unprocessable content";
+			}
+			case "VALIDATION": {
+				set.status = 422;
+				return "input invalid";
+			}
+			case "NotFoundError": {
+				set.status = 404;
+				return "entity not found";
+			}
 		}
 	})
 	.listen(Number(Bun.env.API_PORT || 3000));

@@ -1,0 +1,40 @@
+version: "3.5"
+
+services:
+  replica-1: &api
+    container_name: replica-1
+    hostname: replica-1
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: unless-stopped
+    volumes:
+      - db_data:/usr/src/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.15"
+          memory: "250MB"
+  replica-2:
+    <<: *api
+    container_name: replica-2
+    hostname: replica-2
+  envoy:
+    image: envoyproxy/envoy:v1.29-latest
+    container_name: loadbalancer
+    volumes:
+       - ./config/loadbalancer/:/etc/envoy/
+    ports:
+      - "9999:9999"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: "50MB"
+    command: [ "envoy", "-c", "/etc/envoy/envoy.yaml" ]
+networks:
+  default:
+    driver: bridge
+    name: rinha-envoy
+volumes:
+  db_data:

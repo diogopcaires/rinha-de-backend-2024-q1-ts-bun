@@ -8,10 +8,9 @@
   },
   "dependencies": {
     "@elysiajs/swagger": "^0.7.2",
-    "@types/pg": "^8.11.0",
     "elysia": "latest",
     "pg": "^8.11.3",
-    "pg-pool": "^3.6.1",
+    "pg-pool": "^3.6.1"
   },
   "devDependencies": {
     "prettier": "^3.2.5",

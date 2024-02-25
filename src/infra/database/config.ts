@@ -20,6 +20,7 @@ export function setupDML() {
 
 	db.exec(`DROP TABLE IF EXISTS customers`);
 	db.exec(`DROP TABLE IF EXISTS transactions`);
+
 	db.exec(`CREATE TABLE IF NOT EXISTS customers (
         id INTEGER PRIMARY KEY,
         name TEXT,

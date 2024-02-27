@@ -18,9 +18,9 @@ function buildStatementResponse(
 		ultimas_transacoes: transactions.map((t) => {
 			return {
 				valor: t.value,
-				tipo: t.transaction_type,
+				tipo: t.type,
 				descricao: t.description,
-				realizada_em: t.transaction_at,
+				realizada_em: t.executed_at,
 			};
 		}),
 	};

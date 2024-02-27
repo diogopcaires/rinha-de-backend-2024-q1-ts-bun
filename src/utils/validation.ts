@@ -1,18 +1,13 @@
 import { t } from "elysia";
 import { TransactionType } from "../enums/transaction.type";
+import { TransactionRequestDto } from "../types/transaction.dto";
 
 export const TransactionSchema = {
+	type: "json",
 	params: t.Object({
 		id: t.Numeric(),
 	}),
-	body: t.Object({
-		valor: t.Number(),
-		tipo: t.Enum(TransactionType),
-		descricao: t.String({
-			maxLength: 10,
-			minLength: 1,
-		}),
-	}),
+	body: TransactionRequestDto,
 };
 
 export const StatementSchema = {

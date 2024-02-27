@@ -2,7 +2,7 @@ export type Transaction = {
 	id: number;
 	customer_id: number;
 	value: number;
-	transaction_type: string;
+	type: string;
 	description: string;
-	transaction_at: number;
+	executed_at: number;
 };

@@ -5,18 +5,18 @@ import type { Transaction } from "../types/transaction";
 
 export async function getCustomerStatement(
 	customerId: number,
-): Promise<{ customer: Customer; customerTransactions: [Transaction] }> {
-	const customer = Repository.fetchCustomer(customerId);
+): Promise<{ customer: Customer; customerTransactions: Transaction[] }> {
+	const customer = await Repository.fetchCustomer(customerId);
 
 	if (!customer) throw new NotFoundError("Customer not found");
 
-	const customerTransactions = Repository.fetchCustomerTransactions(
+	const customerTransactions = await Repository.fetchCustomerTransactions(
 		customer.id,
 		10,
 	);
 
 	return {
 		customer,
-		customerTransactions,
+		customerTransactions: customerTransactions ?? [],
 	};
 }

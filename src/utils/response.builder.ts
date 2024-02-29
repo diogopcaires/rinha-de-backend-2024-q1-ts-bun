@@ -5,7 +5,7 @@ import type { TransactionResponseDto } from "../types/transaction.dto";
 
 function buildStatementResponse(
 	customer: Customer,
-	transactions: [Transaction],
+	transactions: Transaction[],
 ): StatementResponseDto {
 	const { account_limit, balance } = customer;
 

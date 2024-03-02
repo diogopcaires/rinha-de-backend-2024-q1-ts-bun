@@ -24,3 +24,13 @@ export class NotFoundError extends Error {
 		super("NOT_FOUND");
 	}
 }
+
+export class ServerError extends Error {
+	code = "SERVER_ERROR";
+	status = 500;
+
+	constructor() {
+		super("SERVER_ERROR");
+	}
+}
+

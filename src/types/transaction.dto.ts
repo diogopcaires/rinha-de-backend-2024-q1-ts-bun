@@ -2,7 +2,7 @@ import { t } from "elysia";
 import { TransactionType } from "../enums/transaction.type";
 
 export const TransactionRequestDto = t.Object({
-	valor: t.Number(),
+	valor: t.Integer(),
 	tipo: t.Enum(TransactionType),
 	descricao: t.String({
 		maxLength: 10,

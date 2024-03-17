@@ -30,6 +30,10 @@ flowchart TD
     end
 ```
 
-### Nota :alien:
+## Stress Test
 
-    Isso jamais, em hipótese alguma, reflete um código real de produção. (Risos).
+<img width="1032" alt="stats screen" src="https://github.com/diogopcaires/rinha-de-backend-2024-q1-ts-bun/blob/main/images/Capture-2024-02-12-063520.png">
+
+### Considerations :alien:
+
+    Don't consider this project, I'm just testing a few things.

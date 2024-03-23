@@ -1,22 +1,13 @@
 import Repository from "../infra/database/repository";
 import { NotFoundError } from "../enums/error";
-import type { Customer } from "../types/customer";
-import type { Transaction } from "../types/transaction";
+import type { Statement } from "../types/statement";
 
 export async function getCustomerStatement(
 	customerId: number,
-): Promise<{ customer: Customer; customerTransactions: Transaction[] }> {
+): Promise<Statement> {
 	const customer = await Repository.fetchCustomer(customerId);
 
-	if (!customer) throw new NotFoundError("Customer not found");
+	if (!customer) throw new NotFoundError();
 
-	const customerTransactions = await Repository.fetchCustomerTransactions(
-		customer.id,
-		10,
-	);
-
-	return {
-		customer,
-		customerTransactions: customerTransactions ?? [],
-	};
+	return await Repository.customerStatement(customerId);
 }

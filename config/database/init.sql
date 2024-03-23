@@ -1,26 +1,82 @@
 CREATE UNLOGGED TABLE customers (
-    id integer PRIMARY KEY NOT NULL,
-    balance integer NOT NULL,
-    account_limit integer NOT NULL
+    id INT PRIMARY KEY NOT NULL,
+    balance BIGINT NOT NULL,
+    account_limit BIGINT NOT NULL
 );
 
 CREATE UNLOGGED TABLE transactions (
     id SERIAL PRIMARY KEY,
-    value integer NOT NULL,
-    description varchar(10) NOT NULL,
+    value BIGINT NOT NULL,
+    description VARCHAR(10) NOT NULL,
     type VARCHAR(1) NOT NULL,
-    executed_at timestamp NOT NULL DEFAULT (NOW() at time zone 'utc'),
-    customer_id integer NOT NULL
+    executed_at TIMESTAMP NOT NULL DEFAULT (NOW() at time zone 'utc'),
+    customer_id INT NOT NULL
 );
 
 CREATE INDEX transaction_customer_index ON transactions (customer_id ASC);
 
 
+CREATE TYPE customer_statement_balance AS (
+    account_limit BIGINT,
+    balance BIGINT
+);
+
+CREATE OR REPLACE FUNCTION customer_statement(
+    p_customer_id INT,
+    p_limit INT
+) RETURNS JSON AS $$
+DECLARE
+    v_result JSON;
+    v_transactions JSON;
+    v_customer customer_statement_balance;
+    v_statement_date TIMESTAMP;
+BEGIN
+    -- Fetch customer details
+    SELECT c.account_limit, c.balance
+    INTO v_customer
+    FROM customers c
+    WHERE c.id = p_customer_id;
+
+    -- Check if customer is found
+    IF v_customer IS NULL THEN
+        RAISE EXCEPTION 'CUSTOMER_NOT_FOUND';
+    END IF;
+
+    -- Fetch transactions
+    SELECT COALESCE(json_agg(json_build_object(
+        'value', t.value,
+        'type', t.type,
+        'description', t.description,
+        'executedAt', t.executed_at
+    )), '[]'::JSON)
+    INTO v_transactions
+    FROM (
+        SELECT value, type, description, executed_at
+        FROM transactions
+        WHERE customer_id = p_customer_id
+        ORDER BY executed_at DESC
+        LIMIT p_limit
+    ) AS t;
+
+    -- Build the result JSON
+    SELECT JSON_BUILD_OBJECT(
+        'balance', JSON_BUILD_OBJECT(
+            'total', v_customer.balance,
+            'limit', v_customer.account_limit
+        ),
+        'statementDate', LOCALTIMESTAMP,
+        'lastTransactions', v_transactions
+    )
+    INTO v_result;
+
+    RETURN v_result;
+END;
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION execute_operation(
     p_customer_id INT,
-    p_value INT,
-    p_type varchar(1),
+    p_value BIGINT,
+    p_type VARCHAR(1),
     p_description TEXT
 ) RETURNS JSON AS $$
 DECLARE

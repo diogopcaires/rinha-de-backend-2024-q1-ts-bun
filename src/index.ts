@@ -46,13 +46,9 @@ const app = new Elysia()
 				async ({ params }) => {
 					const { id } = params as { id: number };
 
-					const { customer, customerTransactions } =
-						await getCustomerStatement(id);
+					const customerStatement = await getCustomerStatement(id);
 
-					return ResponseBuilder.buildStatementResponse(
-						customer,
-						customerTransactions,
-					);
+					return ResponseBuilder.buildStatementResponse(customerStatement);
 				},
 				StatementSchema,
 			),

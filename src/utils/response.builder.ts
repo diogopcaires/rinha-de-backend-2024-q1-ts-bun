@@ -1,26 +1,22 @@
-import type { Customer } from "../types/customer";
+import type { Statement } from "../types/statement";
 import type { StatementResponseDto } from "../types/statement.dto";
-import type { Transaction } from "../types/transaction";
 import type { TransactionResponseDto } from "../types/transaction.dto";
 
-function buildStatementResponse(
-	customer: Customer,
-	transactions: Transaction[],
-): StatementResponseDto {
-	const { account_limit, balance } = customer;
+function buildStatementResponse(statement: Statement): StatementResponseDto {
+	const { balance, lastTransactions } = statement;
 
 	return {
 		saldo: {
-			total: balance,
-			limite: account_limit,
+			total: balance.total,
+			limite: balance.limit,
 			data_extrato: new Date().toISOString(),
 		},
-		ultimas_transacoes: transactions.map((t) => {
+		ultimas_transacoes: lastTransactions.map((t) => {
 			return {
 				valor: t.value,
 				tipo: t.type,
 				descricao: t.description,
-				realizada_em: t.executed_at,
+				realizada_em: t.executedAt,
 			};
 		}),
 	};

@@ -7,21 +7,15 @@ import {
 	NotFoundError,
 } from "./enums/error";
 import { getCustomerStatement } from "./services/statement.service";
-import { seedDatabase, setupDML } from "./infra/database/config";
 import ResponseBuilder from "./utils/response.builder";
 import { StatementSchema, TransactionSchema } from "./utils/validation";
 import { executeTransaction } from "./services/transaction.service";
 
-/* setup database */
-setupDML();
-seedDatabase();
-/* */
-
 const app = new Elysia()
 	.error({
-		UnprocessableContentError,
-		ValidationError,
-		NotFoundError,
+		UNPROCESSABLE_CONTENT_ERROR: UnprocessableContentError,
+		VALIDATION_ERROR: ValidationError,
+		NOT_FOUND_ERROR: NotFoundError,
 	})
 	.get("/healthcheck", async () => {})
 	.group("/clientes/:id", (app) =>
@@ -52,21 +46,17 @@ const app = new Elysia()
 				async ({ params }) => {
 					const { id } = params as { id: number };
 
-					const { customer, customerTransactions } =
-						await getCustomerStatement(id);
+					const customerStatement = await getCustomerStatement(id);
 
-					return ResponseBuilder.buildStatementResponse(
-						customer,
-						customerTransactions,
-					);
+					return ResponseBuilder.buildStatementResponse(customerStatement);
 				},
 				StatementSchema,
 			),
 	)
-	.onError(({ code, set, error }) => {
+	.onError(({ code, error, set }) => {
 		console.log(error);
 		switch (code) {
-			case "UnprocessableContentError": {
+			case "UNPROCESSABLE_CONTENT_ERROR": {
 				set.status = 422;
 				return "unprocessable content";
 			}
@@ -74,10 +64,10 @@ const app = new Elysia()
 				set.status = 422;
 				return "input invalid";
 			}
-			case "NotFoundError": {
+			case "NOT_FOUND_ERROR": {
 				set.status = 404;
 				return "entity not found";
 			}
 		}
 	})
-	.listen(Number(Bun.env.API_PORT || 3003));
+	.listen(Number(Bun.env.API_PORT || 3000));

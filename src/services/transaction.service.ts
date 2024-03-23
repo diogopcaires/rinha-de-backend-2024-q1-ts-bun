@@ -8,26 +8,16 @@ export async function executeTransaction(
 	type: TransactionType,
 	description: string,
 ): Promise<{ balance: number; account_limit: number }> {
-	const customer = Repository.fetchCustomer(customerId);
 
-	if (!customer) throw new NotFoundError("Customer not found");
-
-	const newBalance =
-		customer.balance + (type === TransactionType.CREDIT ? value : -value);
-
-	if (newBalance < -customer.account_limit)
-		throw new UnprocessableContentError("Invalid Transaction");
-
-	Repository.executeTransaction(
-		customer.id,
-		newBalance,
+	const {balance, account_limit} = await Repository.executeTransaction(
+		customerId,
 		value,
 		type,
 		description,
 	);
 
 	return {
-		balance: newBalance,
-		account_limit: customer.account_limit,
+		balance,
+		account_limit,
 	};
 }

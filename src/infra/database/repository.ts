@@ -1,58 +1,97 @@
-import { Database } from "bun:sqlite";
 import type { Customer } from "../../types/customer";
 import type { Transaction } from "../../types/transaction";
 import type { TransactionType } from "../../enums/transaction.type";
+import type { Statement } from "../../types/statement";
+import { pool } from "./pool";
+import { NotFoundError, UnprocessableContentError } from "../../enums/error";
 
-const db = new Database("./data/database.SQLite3");
-
-function fetchCustomer(clientId: number): Customer {
-	const query = db.prepare("SELECT * FROM customers WHERE id = ?");
-	const customer = query.get(clientId) as Customer;
-	query.finalize();
-	return customer;
+async function fetchCustomer(
+	customerId: number,
+): Promise<Customer | undefined> {
+	const client = await pool.connect();
+	try {
+		const result = await client.query("SELECT * FROM customers WHERE id = $1", [
+			customerId,
+		]);
+		return result.rows[0];
+	} finally {
+		client.release();
+	}
 }
 
-function fetchCustomerTransactions(
+async function fetchCustomerTransactions(
 	customerId: number,
 	limit = 10,
-): [Transaction] {
-	const query = db.prepare(
-		"SELECT * FROM transactions WHERE customer_id = ? ORDER BY ID DESC LIMIT ?",
-	);
-	const transactions = query.all(customerId, limit) as [Transaction];
-	query.finalize();
-	console.log(transactions);
-	return transactions;
+): Promise<Transaction[] | undefined> {
+	const client = await pool.connect();
+	try {
+		const result = await pool.query(
+			"SELECT * FROM transactions WHERE customer_id = $1 ORDER BY ID DESC LIMIT $2",
+			[customerId, limit],
+		);
+		return result.rows;
+	} finally {
+		client.release();
+	}
 }
 
-function executeTransaction(
+async function customerStatement(
 	customerId: number,
-	newBalance: number,
+	limit = 10,
+): Promise<Statement> {
+	const client = await pool.connect();
+	try {
+		const query = "SELECT * FROM customer_statement($1,$2)";
+		const result = await client.query(query, [customerId, limit]);
+
+		return result.rows[0].customer_statement;
+	} catch (err) {
+		switch (err.message) {
+			case "CUSTOMER_NOT_FOUND":
+				throw new NotFoundError();
+			default:
+				throw err;
+		}
+	} finally {
+		client.release();
+	}
+}
+
+async function executeTransaction(
+	customerId: number,
 	transactionValue: number,
 	type: TransactionType,
 	description: string,
-) {
-	// let query =
-	// 	db.prepare(`INSERT INTO transactions (customer_id, value, type, description) VALUES (${customerId}, ${transactionValue}, '${type}', '${description}');
-	// 						  UPDATE customers SET balance = ${newBalance} WHERE id = ${customerId};`);
+): Promise<{ balance: number; account_limit: number }> {
+	const client = await pool.connect();
+	try {
+		const query = "SELECT * FROM execute_operation($1,$2,$3,$4)";
+		const result = await client.query(query, [
+			customerId,
+			transactionValue,
+			type,
+			description,
+		]);
+		const { limit, balance } = result.rows[0].execute_operation;
 
-	// query.finalize();
-
-	let query = db.prepare("UPDATE customers SET balance = ? WHERE id = ?");
-
-	query.run(newBalance, customerId);
-
-	query.finalize();
-
-	query = db.prepare(
-		"INSERT INTO transactions (customer_id, value, type, description) VALUES (?, ?, ?, ?)",
-	);
-	query.run(customerId, transactionValue, type, description);
-	query.finalize();
+		return { balance: balance, account_limit: limit };
+	} catch (err) {
+		switch (err.message) {
+			case "CUSTOMER_NOT_FOUND":
+				throw new NotFoundError();
+			case "LIMIT_EXCEEDED":
+				throw new UnprocessableContentError();
+			default:
+				throw err;
+		}
+	} finally {
+		client.release();
+	}
 }
 
 export default {
 	fetchCustomer,
 	fetchCustomerTransactions,
 	executeTransaction,
+	customerStatement,
 };

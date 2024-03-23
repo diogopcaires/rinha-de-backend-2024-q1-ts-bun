@@ -1,22 +1,36 @@
-export enum HttpStatusCode {
-	NOT_FOUND = 404,
-	UNPROCESSABLE_CONTENT = 422,
-}
-
 export class UnprocessableContentError extends Error {
-	constructor(public message: string) {
-		super(message);
+	code = "UNPROCESSABLE_CONTENT_ERROR";
+	status = 422;
+
+	constructor() {
+		super("UNPROCESSABLE_CONTENT_ERROR");
 	}
 }
 
 export class ValidationError extends Error {
-	constructor(public message: string) {
-		super(message);
+	code = "VALIDATION";
+	status = 422;
+
+	constructor() {
+		super("VALIDATION");
 	}
 }
 
 export class NotFoundError extends Error {
-	constructor(public message: string) {
-		super(message);
+	code = "NOT_FOUND";
+	status = 404;
+
+	constructor() {
+		super("NOT_FOUND");
 	}
 }
+
+export class ServerError extends Error {
+	code = "SERVER_ERROR";
+	status = 500;
+
+	constructor() {
+		super("SERVER_ERROR");
+	}
+}
+
